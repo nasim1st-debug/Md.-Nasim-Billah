@@ -25,6 +25,7 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     token_number TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'waiting', -- 'waiting', 'calling', 'completed', 'skipped'
+    location TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     called_at DATETIME,
     completed_at DATETIME,
@@ -32,6 +33,13 @@ db.exec(`
     FOREIGN KEY (counter_id) REFERENCES counters(id)
   );
 `);
+
+// Migration for existing databases
+try {
+  db.exec("ALTER TABLE tokens ADD COLUMN location TEXT");
+} catch (err: any) {
+  // Ignore error if column already exists
+}
 
 // Insert default accounts reliably
 const salt = bcrypt.genSaltSync(10);
@@ -43,8 +51,8 @@ const setUser = db.prepare('INSERT OR REPLACE INTO users (id, username, password
 
 // Assuming ID 1 is admin, ID 2 is staff1 based on previous runs
 // We use hardcoded IDs for defaults to ensure consistency
-const checkAdmin = db.prepare('SELECT id FROM users WHERE username = "admin"').get() as any;
-const checkStaff = db.prepare('SELECT id FROM users WHERE username = "staff1"').get() as any;
+const checkAdmin = db.prepare("SELECT id FROM users WHERE username = 'admin'").get() as any;
+const checkStaff = db.prepare("SELECT id FROM users WHERE username = 'staff1'").get() as any;
 
 setUser.run(checkAdmin?.id || 1, 'admin', passwordHash, 'admin');
 setUser.run(checkStaff?.id || 2, 'staff1', passwordHash, 'staff');

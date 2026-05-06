@@ -5,6 +5,9 @@ import Home from "./pages/Home.tsx";
 import Display from "./pages/Display.tsx";
 import Counter from "./pages/Counter.tsx";
 import Admin from "./pages/Admin.tsx";
+import Analytics from "./pages/Analytics.tsx";
+import Services from "./pages/Services.tsx";
+import Settings from "./pages/Settings.tsx";
 import Login from "./pages/Login.tsx";
 
 // Simple Protected Route Component
@@ -16,8 +19,13 @@ const ProtectedRoute = ({ children, role }: { children: React.ReactNode; role?: 
     return <Navigate to="/login" replace />;
   }
 
-  if (role && user.role !== role) {
-    return <Navigate to="/" replace />;
+  if (role) {
+    if (role === "admin" && user.role !== "admin") {
+      return <Navigate to="/" replace />;
+    }
+    if (role === "staff" && user.role !== "staff" && user.role !== "admin") {
+      return <Navigate to="/" replace />;
+    }
   }
 
   return <>{children}</>;
@@ -46,6 +54,33 @@ export default function App() {
             element={
               <ProtectedRoute role="admin">
                 <Admin />
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="/analytics" 
+            element={
+              <ProtectedRoute role="admin">
+                <Analytics />
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="/services" 
+            element={
+              <ProtectedRoute role="admin">
+                <Services />
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="/settings" 
+            element={
+              <ProtectedRoute role="admin">
+                <Settings />
               </ProtectedRoute>
             } 
           />

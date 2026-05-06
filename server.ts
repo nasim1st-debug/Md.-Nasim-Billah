@@ -60,22 +60,40 @@ async function startServer() {
   // Token Generation
   app.post("/api/tokens/generate", (req, res) => {
     try {
+      const { location } = req.body;
       const lastToken = db.prepare("SELECT token_number FROM tokens ORDER BY id DESC LIMIT 1").get() as any;
       let nextNumber = 1;
-      if (lastToken) {
-        const currentNum = parseInt(lastToken.token_number.substring(1));
-        nextNumber = currentNum + 1;
+
+      if (lastToken && lastToken.token_number) {
+        const match = lastToken.token_number.match(/\d+/);
+        if (match) {
+          const num = parseInt(match[0]);
+          if (!isNaN(num)) {
+            nextNumber = num + 1;
+          }
+        }
       }
       
       const tokenNumber = `A${String(nextNumber).padStart(3, '0')}`;
-      const result = db.prepare("INSERT INTO tokens (token_number) VALUES (?)").run(tokenNumber);
+      const result = db.prepare("INSERT INTO tokens (token_number, location) VALUES (?, ?)").run(tokenNumber, location || "Unknown Device");
       
       const newToken = db.prepare("SELECT * FROM tokens WHERE id = ?").get(result.lastInsertRowid);
       
       io.emit("queue-updated");
       res.json(newToken);
     } catch (err) {
-      res.status(500).json({ error: "Failed to generate token" });
+      console.error("Token generation error:", err);
+      res.status(500).json({ error: "System encountered an error generating your token. Please refresh." });
+    }
+  });
+
+  app.get("/api/tokens/:id", (req, res) => {
+    try {
+      const token = db.prepare("SELECT * FROM tokens WHERE id = ?").get(req.params.id);
+      if (!token) return res.status(404).json({ error: "Token not found" });
+      res.json(token);
+    } catch (err) {
+      res.status(500).json({ error: "Search failed" });
     }
   });
 
@@ -90,11 +108,22 @@ async function startServer() {
       WHERE t.status = 'calling'
       ORDER BY t.called_at DESC
     `).all();
+
+    // Get location breakdown
+    const locations = db.prepare(`
+      SELECT location, COUNT(*) as count 
+      FROM tokens 
+      WHERE location IS NOT NULL AND location != 'Unknown'
+      GROUP BY location 
+      ORDER BY count DESC 
+      LIMIT 10
+    `).all();
     
     res.json({
       waiting: waiting.count,
       completed: completed.count,
-      currentlyCalling
+      currentlyCalling,
+      locations
     });
   });
 

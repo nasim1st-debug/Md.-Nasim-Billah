@@ -1,6 +1,6 @@
 {
   "name": "Connect sheba.Com",
   "description": "A production-ready digital queue management system with token generation, live display, and staff control panels.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": ["geolocation"],
   "majorCapabilities": []
 }
