@@ -21,25 +21,27 @@ export default function Login() {
         body: JSON.stringify({ username, password })
       });
       
-      let data;
       const contentType = res.headers.get("content-type");
-      if (contentType && contentType.indexOf("application/json") !== -1) {
-        data = await res.json();
+      if (contentType && contentType.includes("application/json")) {
+        const data = await res.json();
+        if (res.ok) {
+          localStorage.setItem("token", data.token);
+          localStorage.setItem("user", JSON.stringify(data.user));
+          // Small delay to ensure localStorage is committed
+          setTimeout(() => {
+            navigate(data.user.role === "admin" ? "/admin" : "/counter", { replace: true });
+          }, 100);
+        } else {
+          setError(data.error || "Login failed");
+        }
       } else {
         const text = await res.text();
         console.error("Non-JSON response:", text);
-        throw new Error("Server error (non-JSON response)");
-      }
-
-      if (res.ok) {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user));
-        navigate(data.user.role === "admin" ? "/admin" : "/counter");
-      } else {
-        setError(data.error || "Login failed");
+        setError("Server returned invalid response format.");
       }
     } catch (err) {
-      setError("Server connection error");
+      console.error("Login error:", err);
+      setError("Unable to connect to service.");
     } finally {
       setLoading(false);
     }

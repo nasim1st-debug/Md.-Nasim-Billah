@@ -21,7 +21,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <Ticket size={24} />
           </div>
           <div>
-            <h1 className="text-xl font-black text-white tracking-tighter leading-none">QueueMaster</h1>
+            <h1 className="text-xl font-black text-white tracking-tighter leading-none">Connect sheba.Com</h1>
             <p className="text-[10px] text-indigo-400 font-bold uppercase tracking-widest mt-1">Status: Online</p>
           </div>
         </div>

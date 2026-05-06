@@ -1,4 +1,4 @@
-# QueueMaster - Digital Queue Management System
+# Connect sheba.Com - Digital Queue Management System
 
 A professional, real-time queue management system built with React, Node.js, Express, Socket.io, and SQLite.
 

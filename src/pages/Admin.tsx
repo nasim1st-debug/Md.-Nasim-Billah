@@ -21,8 +21,17 @@ export default function Admin() {
   const clearQueue = async () => {
     if (!confirm("Are you sure you want to CLEAR the entire queue? This will reset all tokens and counters.")) return;
     setLoading(true);
-    await fetch("/api/admin/clear-queue", { method: "POST" });
-    setLoading(false);
+    try {
+      const res = await fetch("/api/admin/clear-queue", { method: "POST" });
+      if (res.ok) {
+        alert("Queue cleared successfully");
+        fetchStats();
+      }
+    } catch (err) {
+      console.error("Clear queue error:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3';
 import path from 'path';
+import bcrypt from 'bcryptjs';
 
 const db = new Database('queue.db');
 
@@ -32,20 +33,29 @@ db.exec(`
   );
 `);
 
-// Insert default admin if not exists (password: admin123)
-// Note: In a real app we'd hash it properly, but for the first run I'll use a pre-hashed version
-// Hash for 'admin123' using bcryptjs (simulated for initialization)
-const adminHash = '$2a$10$r9I1W0Y6F.lGub7Q/U.Z2e9u4Wzq1k3gK4XQZpXU/8J6Q1E.y.WmW'; // common bcrypt hash for testing
-const staffHash = '$2a$10$r9I1W0Y6F.lGub7Q/U.Z2e9u4Wzq1k3gK4XQZpXU/8J6Q1E.y.WmW';
+// Insert default accounts reliably
+const salt = bcrypt.genSaltSync(10);
+const passwordHash = bcrypt.hashSync('admin123', salt);
 
-const insertAdmin = db.prepare('INSERT OR IGNORE INTO users (username, password_hash, role) VALUES (?, ?, ?)');
-insertAdmin.run('admin', adminHash, 'admin');
-insertAdmin.run('staff1', staffHash, 'staff');
+// Synchronize default accounts
+// Use REPLACE INTO to ensure the credentials are always reset to default on start during development
+const setUser = db.prepare('INSERT OR REPLACE INTO users (id, username, password_hash, role) VALUES (?, ?, ?, ?)');
 
-// Insert default counters
-const insertCounter = db.prepare('INSERT OR IGNORE INTO counters (id, name) VALUES (?, ?)');
-for (let i = 1; i <= 5; i++) {
-  insertCounter.run(i, `Counter ${i}`);
+// Assuming ID 1 is admin, ID 2 is staff1 based on previous runs
+// We use hardcoded IDs for defaults to ensure consistency
+const checkAdmin = db.prepare('SELECT id FROM users WHERE username = "admin"').get() as any;
+const checkStaff = db.prepare('SELECT id FROM users WHERE username = "staff1"').get() as any;
+
+setUser.run(checkAdmin?.id || 1, 'admin', passwordHash, 'admin');
+setUser.run(checkStaff?.id || 2, 'staff1', passwordHash, 'staff');
+
+// Insert default counters if they don't exist
+const countCounters = db.prepare('SELECT COUNT(*) as count FROM counters').get() as any;
+if (countCounters.count === 0) {
+  const insertCounter = db.prepare('INSERT INTO counters (name) VALUES (?)');
+  for (let i = 1; i <= 5; i++) {
+    insertCounter.run(`Counter ${i}`);
+  }
 }
 
 export default db;
